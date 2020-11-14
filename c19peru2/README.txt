@@ -29,10 +29,3 @@ Ver 1.03
 
  - Added a dropdown tab for the "Department" and a callback function for the District
  - added a second map that will tell show the location of the Department.
- 
- 
- 09/30/2020
- 
- - Added Bar plots to determine the number of active and deaths in each Department. In addition to this, a regression line has been added to determine a possible ouutcome.
- - Added colors to the background and plots.
-

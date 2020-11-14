@@ -5,10 +5,10 @@ import urllib.request
 def pivfiles(active,nactive,deaths,ndeath):
     urllib.request.urlretrieve(active, nactive)
     urllib.request.urlretrieve(deaths, ndeath)
-    df = pd.read_csv(nactive, encoding = "ISO-8859-1", engine='python')
+    df = pd.read_csv(nactive, encoding = "ISO-8859-1", sep =';', engine='python')
     df['DEPARTAMENTO'] = df['DEPARTAMENTO'].replace(['LIMA REGION'],'LIMA')
     
-    df2 = pd.read_csv(ndeath, encoding = "ISO-8859-1", engine='python')
+    df2 = pd.read_csv(ndeath, encoding = "ISO-8859-1",sep =';', engine='python')
     df2['DEPARTAMENTO'] = df2['DEPARTAMENTO'].replace(['LIMA REGION'],'LIMA')
     
     # Adjusting the dates for active cases

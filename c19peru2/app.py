@@ -89,7 +89,7 @@ app.layout = html.Div(style={'backgroundColor': colors['background']},
     
     ####
     ### DROPDOWN ###
-    html.Label('Departament',style={'backgroundColor': colors['background'], 'color': colors['text']}),
+    html.Label('Department',style={'backgroundColor': colors['background'], 'color': colors['text']}),
     dcc.Dropdown(id = 'Department',
         options=[
             {'label': i, 'value': i}
@@ -186,9 +186,10 @@ def update_figure(selected_Department):
                      plot_bgcolor=colors['background'],
                      paper_bgcolor=colors['background'],
                      font_color=colors['text'])
-    fig.update_xaxes(
-    dtick="M1",
-    tickformat="%b\n%Y")
+    
+    #fig.update_xaxes(
+    #dtick="M1",
+    #tickformat="%b\n%Y")
 
     
     ##############
