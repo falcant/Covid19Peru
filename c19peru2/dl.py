@@ -6,10 +6,13 @@ def pivfiles(active,nactive,deaths,ndeath):
     urllib.request.urlretrieve(active, nactive)
     urllib.request.urlretrieve(deaths, ndeath)
     df = pd.read_csv(nactive, encoding = "ISO-8859-1", sep =';', engine='python')
-    df['DEPARTAMENTO'] = df['DEPARTAMENTO'].replace(['LIMA REGION'],'LIMA')
+   
+        
+    #df['DEPARTAMENTO'] = df['DEPARTAMENTO'].replace(['LIMA REGION'],'LIMA')
+   
     
     df2 = pd.read_csv(ndeath, encoding = "ISO-8859-1",sep =';', engine='python')
-    df2['DEPARTAMENTO'] = df2['DEPARTAMENTO'].replace(['LIMA REGION'],'LIMA')
+    #df2['DEPARTAMENTO'] = df2['DEPARTAMENTO'].replace(['LIMA REGION'],'LIMA')
     
     # Adjusting the dates for active cases
     df['FECHA_RESULTADO'] = df['FECHA_RESULTADO'].apply(lambda x: pd.to_datetime(str(x), format='%Y%m%d'))
@@ -33,6 +36,10 @@ def pivfiles(active,nactive,deaths,ndeath):
     ADeptdf  = ADeptdf.fillna(0)
     #Deptdf = Deptdf.reset_index()
     ADeptdf.columns = ["Department", "Active Cases"]
+    
+    #new_row = ADeptdf[( ADeptdf['Department'] == 'LIMA') | ( ADeptdf['Department'] == 'LIMA REGION')]['Active Cases'].sum()
+    #ADeptdf = ADeptdf[( ADeptdf['Department'] != 'LIMA') | ( ADeptdf['Department'] != 'LIMA REGION')] 
+    #ADeptdf.append({'Department':'LIMA'},{'Active Cases',new_row})
     
     # Dead by Department (overall, no Dates)
     DDeptdf = df2.pivot_table(values='UUID',index=['DEPARTAMENTO'], aggfunc=lambda x: x.count()).reset_index(level=0)

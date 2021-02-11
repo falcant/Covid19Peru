@@ -24,6 +24,42 @@ ActiveDeptdf = pd.read_csv('ActivebyDept_with_Date.csv', encoding = "ISO-8859-1"
 DeadDeptdf = pd.read_csv('Deaths_byDept_with_date.csv', encoding = "ISO-8859-1", engine='python')
 Deptdf = pd.read_csv('CasesbyDepartment.csv', encoding = "ISO-8859-1", engine='python')
 
+
+# Reading the geo Location Data
+Dept_Popualtion_Geo = pd.read_csv('Geo_Location_Population.csv', encoding = "ISO-8859-1", engine='python')
+
+# adding population
+ActiveDeptdf = pd.merge(ActiveDeptdf, Dept_Popualtion_Geo, how='inner', on='Department')
+
+DeadDeptdf = pd.merge(DeadDeptdf, Dept_Popualtion_Geo, how='inner', on='Department')
+
+
+#Parameter to calculate the last 3 months
+
+import datetime
+today = datetime.date.today()
+last3Months = today - pd.offsets.MonthBegin(3)
+last3Months =  last3Months.strftime("%Y-%m")
+
+# creating the cumulative values for Active/Deaths
+
+ActiveDeptdfL3 = ActiveDeptdf[ActiveDeptdf['Date']>=last3Months]
+ActiveDeptdfL3['Cumulative'] = ActiveDeptdfL3.groupby(['Department'])['Active Cases'].apply(lambda x: x.cumsum())
+
+DeadDeptdfL3 = DeadDeptdf[DeadDeptdf['Date']>=last3Months]
+DeadDeptdfL3['Cumulative'] = DeadDeptdfL3.groupby(['Department'])['Deaths'].apply(lambda x: x.cumsum())
+
+
+
+#Combining LIMA and LIMA REGION into one
+# sum of the 2 values LIMA + LIMA REGION
+LIMA_DEPT = Deptdf[ (Deptdf['Department'] =='LIMA') | (Deptdf['Department'] =='LIMA REGION') ][['Active Cases','Deaths']].sum()
+# Dropping LIMA and LIMA REGION from Deptdf
+Deptdf.drop([14,15],axis = 0, inplace = True)
+#Adding a the sum of LIMA and LIMA REGION to Dept
+Deptdf.loc[len(Deptdf.index)] = ['LIMA', LIMA_DEPT[0], LIMA_DEPT[1]]
+
+
 # Geojson Data
 with open('peru_departamental_simple.geojson') as response:
     peru_department = json.load(response)  
@@ -44,7 +80,7 @@ fig2 = px.choropleth_mapbox(Deptdf, geojson=peru_department,
                            color_continuous_scale=["green","yellow","red"],
                            opacity= 0.4,
                            hover_data= ["Active Cases","Deaths"]
-                            ,zoom=4.0)
+                            ,zoom=3.89)
 
 
 fig2.update_layout(margin={"r":0,"t":0,"l":0,"b":0}, title_text = 'COVID-19 en el Peru',
@@ -62,7 +98,55 @@ fig2.update_layout(margin={"r":0,"t":0,"l":0,"b":0}, title_text = 'COVID-19 en e
                   ) 
 #fig2.show()
 
-# DASH
+## fig 3 (active cases) ##########
+
+fig3 = px.scatter(ActiveDeptdfL3, x="Cumulative", y="Active Cases",
+           animation_frame="Date", animation_group="Department",
+            title = 'Active Cases',
+           size="Population", color="Geo Region", hover_name="Department",
+          log_x= True, log_y=True, range_x=[1,1000000], range_y=[1,4000], size_max =45)
+
+fig3.update_layout(  title={'x':0.5,'xanchor':'center','font':{'size':20}},
+                      yaxis={'title':{'text':'Active Cases per Day'}},
+                       xaxis={'title':{'text': 'Total Number of Cases'}},
+                     plot_bgcolor=colors['background'],
+                     paper_bgcolor=colors['background'],
+                     font_color=colors['text'])
+fig3.update_xaxes(showgrid=False)
+fig3.update_yaxes(showgrid=False)
+#fig3.layout.updatemenus[0].buttons[0].args[1]['frame']['duration'] = 600
+#fig3.layout.updatemenus[0].buttons[0].args[1]['transition']['duration'] = 600
+#fig3.layout.updatemenus[0].buttons[0].method = 'animate'
+#fig3.show()
+
+##############################
+
+## fig 4 (deaths) ##########
+# Doing the same scatter plot for the number of Dead
+fig4 = px.scatter(DeadDeptdfL3, x="Cumulative", y="Deaths",
+           animation_frame="Date", animation_group="Department",
+            title = 'Deaths',
+           size="Population", color="Geo Region", hover_name="Department",
+          log_x= True, log_y=True, range_x=[1,5000], range_y=[1,200], size_max =45)
+
+fig4.update_layout(  title={'x':0.5,'xanchor':'center','font':{'size':20}},
+                      yaxis={'title':{'text':'Deaths per Day'}},
+                       xaxis={'title':{'text': 'Total Deaths'}},
+                     plot_bgcolor=colors['background'],
+                     paper_bgcolor=colors['background'],
+                     font_color=colors['text'])
+fig4.update_xaxes(showgrid=False)
+fig4.update_yaxes(showgrid=False)
+#fig3.layout.updatemenus[0].buttons[0].args[1]['frame']['duration'] = 600
+#fig3.layout.updatemenus[0].buttons[0].args[1]['transition']['duration'] = 600
+#fig3.layout.updatemenus[0].buttons[0].method = 'animate'
+#fig4.show()
+
+
+######################
+
+
+### DASH ###################
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
@@ -79,7 +163,7 @@ app.layout = html.Div(style={'backgroundColor': colors['background']},
                       style={'text-align': 'center', 'color': colors['text']}),
             html.H6("Created by: Felix Alcantara", style={'text-align': 'center', 'color': colors['text']}),
     
-     html.Div(children='''
+     html.Div('''
         The Following information shows the number of active cases and Deaths in the different Departments and Districs in Peru.
         The Data was obtained from the Ministerio de Salud (MINSA) from Peru. This Dashboard gets updated daily.
         
@@ -89,7 +173,7 @@ app.layout = html.Div(style={'backgroundColor': colors['background']},
     
     ####
     ### DROPDOWN ###
-    html.Label('Department',style={'backgroundColor': colors['background'], 'color': colors['text']}),
+    html.Label('Departament',style={'backgroundColor': colors['background'], 'color': colors['text']}),
     dcc.Dropdown(id = 'Department',
         options=[
             {'label': i, 'value': i}
@@ -104,7 +188,6 @@ app.layout = html.Div(style={'backgroundColor': colors['background']},
      ) ,  
     #############
     
-    
     ################
 
     ################         
@@ -114,21 +197,37 @@ app.layout = html.Div(style={'backgroundColor': colors['background']},
         dcc.Loading(dcc.Graph(id='graph-bar'),type='default')
         ], className="six columns"),
 
-        html.Div(style={'backgroundColor': colors['background'], 'color': colors['text']},children = [
-            html.H4('Number of Cases/Deaths Overall'),
+html.Div(style={'backgroundColor': colors['background'], 'color': colors['text']}
+             
+            ,children = 
+         
+         [html.H4('Number of Cases/Deaths Overall'),
+            
             dcc.Graph(figure=fig2)
         ], className="six columns"),
     ], className="row")
 
-])
-
+     ,
+ html.Div(style={'backgroundColor': colors['background'], 'color': colors['text']}, children = [
+        html.Div([
+        html.H4('Activity in the Last 3 Months by Region',style={'text-align': 'center'}),
+        html.H6('Peru is divided by 3 geographical regions; the coast, the highlands and the jungle. \
+               Lima, the capital, is located on the coast.'
+                ,style={'text-align': 'center'}),
+        dcc.Graph(figure= fig3), dcc.Graph(figure= fig4)
+        ], className="row")
+     
+     
+                      
+                      
+                      ])
+                      ])
 @app.callback(
     Output("graph-bar", 'figure'),
    #Output("graph-map", 'figure'),
     [Input("Department", 'value')])
-
+                       
 def update_figure(selected_Department):
-    
     time.sleep(1)
     ##############
     Active = ActiveDeptdf[ActiveDeptdf.Department==selected_Department]
@@ -182,14 +281,15 @@ def update_figure(selected_Department):
                          y=Dead['Best Fit'], mode='lines',marker_color='red'),row=2,col=1
     )
 
-    fig.update_layout(showlegend = False,
+    fig.update_layout( showlegend = False,
                      plot_bgcolor=colors['background'],
                      paper_bgcolor=colors['background'],
                      font_color=colors['text'])
-    
-    #fig.update_xaxes(
-    #dtick="M1",
-    #tickformat="%b\n%Y")
+    fig.update_xaxes(
+    dtick="M1",
+    tickformat="%b\n%Y",
+    showgrid=False)
+    fig.update_yaxes(showgrid=False)
 
     
     ##############
